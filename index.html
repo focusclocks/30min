@@ -1,0 +1,273 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Discipline Timer</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #0f0c29, #302b63, #24243e);
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            color: #fff;
+            padding: 15px;
+            overflow: hidden;
+        }
+        .container {
+            max-width: 500px;
+            width: 100%;
+            background: rgba(255, 255, 255, 0.05);
+            backdrop-filter: blur(10px);
+            border-radius: 24px;
+            padding: 25px;
+            box-shadow: 0 8px 32px rgba(0,0,0,0.37);
+            border: 1px solid rgba(255,255,255,0.18);
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.8rem;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .timer {
+            font-size: 3rem;
+            font-weight: bold;
+            letter-spacing: 8px;
+            color: #fff;
+            text-shadow: 0 0 20px rgba(102, 126, 234, 0.5);
+            font-family: 'Courier New', monospace;
+            margin-bottom: 20px;
+        }
+        .controls {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .btn {
+            padding: 12px 35px;
+            font-size: 1rem;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            transition: all 0.3s ease;
+        }
+        .btn-start {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: #fff;
+        }
+        .btn-start:hover { transform: translateY(-2px); box-shadow: 0 10px 20px rgba(102,126,234,0.4); }
+        .btn-reset {
+            background: rgba(255,255,255,0.1);
+            color: #fff;
+            border: 1px solid rgba(255,255,255,0.2);
+        }
+        .btn-reset:hover { background: rgba(255,255,255,0.15); }
+
+        .progress-section { width: 100%; margin-bottom: 20px; }
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 8px;
+        }
+        .progress-label { font-size: 0.9rem; color: #a0a0a0; }
+        .progress-percentage { font-size: 1.2rem; font-weight: bold; color: #10b981; }
+        .progress-bar-container {
+            width: 100%;
+            height: 28px;
+            background: rgba(255,255,255,0.05);
+            border-radius: 14px;
+            border: 1px solid rgba(255,255,255,0.1);
+            overflow: hidden;
+            position: relative;
+        }
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            border-radius: 14px;
+            transition: width 0.5s ease;
+            box-shadow: 0 0 15px rgba(16,185,129,0.5);
+            position: relative;
+        }
+        .progress-bar::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: -100%;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.3), transparent);
+            animation: shimmer 2s infinite;
+        }
+        @keyframes shimmer { 0% { left: -100%; } 100% { left: 100%; } }
+
+        .quote-section {
+            text-align: center;
+            min-height: 60px;
+        }
+        .quote {
+            font-size: 1rem;
+            font-style: italic;
+            color: #e0e0e0;
+            line-height: 1.5;
+            max-width: 400px;
+            padding: 15px;
+            background: rgba(255,255,255,0.03);
+            border-radius: 16px;
+            border-left: 4px solid #667eea;
+            transition: opacity 0.5s ease;
+            font-weight: 600;
+            margin-top: 10px;
+        }
+
+        @media (max-width: 500px) {
+            .timer { font-size: 2.5rem; letter-spacing: 6px; }
+            .btn { padding: 10px 25px; font-size: 0.9rem; }
+            .quote { font-size: 0.9rem; padding: 10px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Discipline Timer</h1>
+
+        <div class="timer" id="timer">30:00</div>
+
+        <div class="controls">
+            <button class="btn btn-start" id="startBtn">Start</button>
+            <button class="btn btn-reset" id="resetBtn">Reset</button>
+        </div>
+
+        <div class="progress-section">
+            <div class="progress-header">
+                <span class="progress-label">Session Progress</span>
+                <span class="progress-percentage" id="progressPercent">0.000%</span>
+            </div>
+            <div class="progress-bar-container">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+            </div>
+        </div>
+
+        <div class="quote-section">
+            <div class="quote" id="quote"></div>
+        </div>
+    </div>
+
+    <script>
+        const quotes = [
+            "Discipline is choosing between what you want now and what you want most",
+            "Motivation gets you started, discipline keeps you going",
+            "Stop waiting for motivation. Start building discipline",
+            "The work you put in today will determine the person you become tomorrow",
+            "Every action you take is a vote for the person you wish to become",
+            "Success is not for the lazy, it's for the disciplined"
+        ];
+
+        let timeRemaining = 1800; // 30 minutes in seconds
+        const totalTime = 1800;
+        let timerInterval = null;
+        let progressInterval = null;
+        let quoteInterval = null;
+        let isRunning = false;
+        let usedQuotes = [];
+
+        const timerDisplay = document.getElementById('timer');
+        const startBtn = document.getElementById('startBtn');
+        const resetBtn = document.getElementById('resetBtn');
+        const progressBar = document.getElementById('progressBar');
+        const progressPercent = document.getElementById('progressPercent');
+        const quoteDisplay = document.getElementById('quote');
+
+        function formatTime(seconds) {
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
+        }
+
+        function updateTimer() { timerDisplay.textContent = formatTime(timeRemaining); }
+
+        function updateProgress() {
+            const percentage = ((totalTime - timeRemaining) / totalTime) * 100;
+            progressBar.style.width = `${percentage}%`;
+            progressPercent.textContent = `${percentage.toFixed(3)}%`;
+        }
+
+        function getRandomQuote() {
+            if (usedQuotes.length === quotes.length) usedQuotes = [];
+            let available = quotes.filter(q => !usedQuotes.includes(q));
+            let q = available[Math.floor(Math.random() * available.length)];
+            usedQuotes.push(q);
+            return q;
+        }
+
+        function displayQuote() {
+            quoteDisplay.style.opacity = '0';
+            setTimeout(() => {
+                quoteDisplay.textContent = `"${getRandomQuote()}"`;
+                quoteDisplay.style.opacity = '1';
+            }, 500);
+        }
+
+        function startTimer() {
+            if (isRunning) {
+                clearInterval(timerInterval);
+                clearInterval(progressInterval);
+                clearInterval(quoteInterval);
+                isRunning = false;
+                startBtn.textContent = 'Resume';
+            } else {
+                isRunning = true;
+                startBtn.textContent = 'Pause';
+                timerInterval = setInterval(() => {
+                    if (timeRemaining > 0) {
+                        timeRemaining--;
+                        updateTimer();
+                    } else {
+                        clearInterval(timerInterval);
+                        clearInterval(progressInterval);
+                        clearInterval(quoteInterval);
+                        isRunning = false;
+                        startBtn.textContent = 'Start';
+                        alert('🎉 Session Complete!');
+                    }
+                }, 1000);
+                progressInterval = setInterval(updateProgress, 500);
+                quoteInterval = setInterval(displayQuote, 10000);
+                displayQuote();
+            }
+        }
+
+        function resetTimer() {
+            clearInterval(timerInterval);
+            clearInterval(progressInterval);
+            clearInterval(quoteInterval);
+            timeRemaining = 1800;
+            isRunning = false;
+            startBtn.textContent = 'Start';
+            updateTimer();
+            progressBar.style.width = '0%';
+            progressPercent.textContent = '0.000%';
+            usedQuotes = [];
+            displayQuote();
+        }
+
+        startBtn.addEventListener('click', startTimer);
+        resetBtn.addEventListener('click', resetTimer);
+
+        // Initialize
+        updateTimer();
+        displayQuote();
+    </script>
+</body>
+</html>
